@@ -140,13 +140,27 @@ end
 ZVM.OpcodeTable[12] = function(self)  --MUL
   self:Dyn_EmitOperand("$1 * $2")
 end
-ZVM.OpcodeTable[13] = function(self)  --DIV
-  self:Dyn_Emit("$L OP = $2")
-  self:Dyn_EmitOperand("$1 / OP")
-  self:Dyn_Emit("if math.abs(OP) < 1e-12 then")
+ZVM.OpcodeTable[13] = function(self)
+  self:Dyn_EmitForceRegisterGlobal("R0") --// remainder
+  self:Dyn_EmitForceRegisterGlobal("R1") --// quotient
+
+  self:Dyn_Emit("$L divisor = $2")
+
+  self:Dyn_Emit("if math.abs(divisor) < 1e-12 then")
     self:Dyn_EmitInterrupt("3","0")
+    self:Dyn_EmitBreak()
   self:Dyn_Emit("end")
+
+  self:Dyn_Emit("$L dividend = $1")
+
+  self:Dyn_Emit("R1 = dividend / divisor")
+
+  self:Dyn_Emit("R0 = dividend - (R1 * divisor)")
+
+  self:Dyn_EmitRegisterValueChanged("R0")
+  self:Dyn_EmitRegisterValueChanged("R1")
 end
+
 ZVM.OpcodeTable[14] = function(self)  --MOV
   self:Dyn_EmitOperand("$2")
 end
